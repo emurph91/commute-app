@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Commute App</title>
+
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <!-- Heatmap plugin -->
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #controls {
+            padding: 10px;
+            background: #f4f4f4;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #map {
+            height: 80vh;
+        }
+
+        #info {
+            padding: 10px;
+            font-size: 14px;
+        }
+
+        select, input {
+            margin-right: 10px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ccc;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+
+    <!-- Map Mode -->
+    <label>Mode:</label>
+   <select id="mapMode">
+    <option value="route">📍 Potential Route (2 points)</option>
+    <option value="isochrone">🗺️ Commute Zone (1 point)</option> 
+</select>
+
+    <!-- Travel Mode -->
+    <label>Travel:</label>
+    <select id="mode" onchange="toggleTransportFilters()">
+        <option value="driving-car">Car</option>
+        <option value="cycling-regular">Bike</option>
+        <option value="foot-walking">Walk</option>
+        <option value="public-transport">Public Transport</option>
+    </select>
+
+    <!-- Transport Filters -->
+    <span id="transportFilters" style="display:none;">
+        <label><input type="checkbox" value="tube" checked> Tube</label>
+        <label><input type="checkbox" value="bus" checked> Bus</label>
+        <label><input type="checkbox" value="national-rail" checked> Rail</label>
+    </span>
+
+    <!-- Isochrone Options -->
+    <span id="isoOptions" style="display:none;">
+        <label>Filter:</label>
+        <select id="filterType" onchange="toggleFilterInputs()">
+            <option value="time">Time</option>
+            <option value="distance">Distance</option>
+        </select>
+
+        <span id="timeInput">
+            <input type="number" id="isoTime" value="30" min="1"> mins
+        </span>
+
+        <span id="distanceInput" style="display:none;">
+            <input type="number" id="isoDistance" value="5" min="1"> km
+        </span>
+
+        <!-- Heatmap toggle -->
+        <label>
+            <input type="checkbox" id="heatToggle"> Heatmap 🔥
+        </label>
+    </span>
+
+    <!-- Date & Time -->
+    <label>Date:</label>
+    <input type="date" id="departureDate">
+
+    <label>Time:</label>
+    <input type="time" id="departureTime">
+
+    <button onclick="setNow()">Now</button>
+
+<style>
+    .leaflet-overlay-pane svg {
+        pointer-events: none;
+    }
+    .leaflet-overlay-pane svg path {
+        pointer-events: visiblePainted;
+    }
+</style>
+
+</div>
+
+<div id="map"></div>
+
+<div id="info"></div>
+
+<!-- Your JS -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Virtual environment
+venv/
+
+# API keys
+ORS_API_KEY
+OPS_API_KEY
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Flask debug
+*.log
+
+# Large data files
+naptan_2026_london.csv
+
+# OS files
+.DS_Store
+Thumbs.db
