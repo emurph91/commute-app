@@ -2,130 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Commute App</title>
-
-    <!-- Leaflet -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
-    <!-- Heatmap plugin -->
-    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
-
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-
-        #controls {
-            padding: 10px;
-            background: #f4f4f4;
-            border-bottom: 1px solid #ccc;
-        }
-
-        #map {
-            height: 80vh;
-        }
-
-        #info {
-            padding: 10px;
-            font-size: 14px;
-        }
-
-        select, input {
-            margin-right: 10px;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border: 2px solid #ccc;
-            border-top: 2px solid #007bff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commute Planner</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
 </head>
 <body>
 
-<div id="controls">
+    <div id="map"></div>
 
-    <!-- Map Mode -->
-    <label>Mode:</label>
-   <select id="mapMode">
-    <option value="route">📍 Potential Route (2 points)</option>
-    <option value="isochrone">🗺️ Commute Zone (1 point)</option> 
-</select>
+    <!-- ── Controls panel ── -->
+    <div id="panel">
+        <div id="panel-header">
+            <span id="panel-title">COMMUTE PLANNER</span>
+        </div>
 
-    <!-- Travel Mode -->
-    <label>Travel:</label>
-    <select id="mode" onchange="toggleTransportFilters()">
-        <option value="driving-car">Car</option>
-        <option value="cycling-regular">Bike</option>
-        <option value="foot-walking">Walk</option>
-        <option value="public-transport">Public Transport</option>
-    </select>
+        <div class="field">
+            <label class="field-label">ORIGIN</label>
+            <div id="location-display">Click map to set location</div>
+            <input type="hidden" id="lat"/>
+            <input type="hidden" id="lng"/>
+        </div>
 
-    <!-- Transport Filters -->
-    <span id="transportFilters" style="display:none;">
-        <label><input type="checkbox" value="tube" checked> Tube</label>
-        <label><input type="checkbox" value="bus" checked> Bus</label>
-        <label><input type="checkbox" value="national-rail" checked> Rail</label>
-    </span>
+        <div class="field">
+            <label class="field-label">MAX TRAVEL TIME</label>
+            <div class="time-row">
+                <input id="max-minutes" type="number" value="60" min="5" max="120" step="5"/>
+                <span class="unit">mins</span>
+            </div>
+        </div>
 
-    <!-- Isochrone Options -->
-    <span id="isoOptions" style="display:none;">
-        <label>Filter:</label>
-        <select id="filterType" onchange="toggleFilterInputs()">
-            <option value="time">Time</option>
-            <option value="distance">Distance</option>
-        </select>
+        <div class="field">
+            <label class="field-label">TRANSPORT MODES</label>
+            <div class="checkbox-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="mode-rail" value="rail" checked/>
+                    <span class="checkbox-custom rail"></span>
+                    Rail
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="mode-tube" value="tube" checked/>
+                    <span class="checkbox-custom tube"></span>
+                    Tube
+                </label>
+                <label class="checkbox-label">
+                    <input type="checkbox" id="mode-bus" value="bus"/>
+                    <span class="checkbox-custom bus"></span>
+                    Bus
+                </label>
+            </div>
+        </div>
 
-        <span id="timeInput">
-            <input type="number" id="isoTime" value="30" min="1"> mins
-        </span>
+        <button id="search-btn" disabled>SET ORIGIN FIRST</button>
+        <p id="status"></p>
+    </div>
 
-        <span id="distanceInput" style="display:none;">
-            <input type="number" id="isoDistance" value="5" min="1"> km
-        </span>
+    <!-- ── Map legend ── -->
+    <div id="legend">
+        <div class="legend-row"><span class="dot origin"></span>Your location</div>
+        <div class="legend-row"><span class="dot rail"></span>Rail</div>
+        <div class="legend-row"><span class="dot tube"></span>Tube</div>
+        <div class="legend-row"><span class="dot bus"></span>Bus</div>
+        <div id="stop-count"></div>
+    </div>
 
-        <!-- Heatmap toggle -->
-        <label>
-            <input type="checkbox" id="heatToggle"> Heatmap 🔥
-        </label>
-    </span>
-
-    <!-- Date & Time -->
-    <label>Date:</label>
-    <input type="date" id="departureDate">
-
-    <label>Time:</label>
-    <input type="time" id="departureTime">
-
-    <button onclick="setNow()">Now</button>
-
-<style>
-    .leaflet-overlay-pane svg {
-        pointer-events: none;
-    }
-    .leaflet-overlay-pane svg path {
-        pointer-events: visiblePainted;
-    }
-</style>
-
-</div>
-
-<div id="map"></div>
-
-<div id="info"></div>
-
-<!-- Your JS -->
-<script src="{{ url_for('static', filename='script.js') }}"></script>
-
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
