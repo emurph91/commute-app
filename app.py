@@ -1,10 +1,13 @@
 import csv
+from re import search
 import pandas as pd
 import os
 import requests
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from flask import Flask, render_template, request, jsonify
+import uuid
+import threading
 
 # =============================================================================
 # CSV LOAD
@@ -12,6 +15,8 @@ from flask import Flask, render_template, request, jsonify
 
 def load_stops_from_csv(filename="490Stops.csv"):
     station_stops = []
+    unique_stations = set()  # track unique station names, removes multiple of one station due to multiple exits/entrances
+
     try:
         with open(filename, newline="", encoding="cp1252", errors="ignore") as f:
             reader = csv.DictReader(f)
@@ -20,18 +25,25 @@ def load_stops_from_csv(filename="490Stops.csv"):
                     lng  = float(row["Longitude"])
                     lat  = float(row["Latitude"])
                     mode = row.get("Mode", "").strip().lower()
-                    name = row.get("Name", "").strip()
-                    if lng != 0 and lat != 0:
-                        station_stops.append({
-                            "longitude": lng,
-                            "latitude":  lat,
-                            "mode":      mode,
-                            "name":      name,
-                        })
+                    name = row.get("CommonName", "").strip()
+
+                    if lng != 0 and lat != 0 and name and mode:
+                        key =(name.lower(), mode) #normalise all the station names
+
+                        if key not in unique_stations:
+                            station_stops.append({
+                                "longitude": lng,
+                                "latitude":  lat,
+                                "mode":      mode,
+                                "name":      name,
+                            })
+                            unique_stations.add(key)  # mark as gathered
+
                 except (ValueError, KeyError, TypeError):
                     continue
     except Exception as e:
         print("CSV LOAD ERROR:", e)
+
     return station_stops
 
 
@@ -51,6 +63,7 @@ def filter_stops_by_mode(station_stops, mode=None):
 # TfL JOURNEY PLANNER API
 # =============================================================================
 
+#
 def load_api_key(filename):
     with open(filename) as f:
         return f.read().strip()
@@ -107,12 +120,35 @@ def get_tfl_journey_minutes(origin_lat, origin_lng, dest_lat, dest_lng, mode):
 
     return None
 
+# ── Active search registry ─────────────────────────────────────────────────────
+active_searches = {}
+active_searches_lock = threading.Lock()
 
-def filter_stops_by_time(user_time_specific_stops, user_lat, user_lng, max_user_commute_minutes):
+def is_search_active(search_id):
+    with active_searches_lock:
+        return active_searches.get(search_id, False)
+
+def register_search(search_id):
+    with active_searches_lock:
+        active_searches[search_id] = True
+
+def cancel_search(search_id):
+    with active_searches_lock:
+        active_searches[search_id] = False
+
+def cleanup_search(search_id):
+    with active_searches_lock:
+        active_searches.pop(search_id, None)
+
+#───────── filter_stops_by_time to accept and check search_id ───────────────────────────
+
+def filter_stops_by_time(user_time_specific_stops, user_lat, user_lng, max_user_commute_minutes,search_id):
     user_commute_time_results = []
 
     def check_stops(commute_stops):
-        time.sleep(0.15)    # 500 req/min limit — 0.15s gives safety buffer
+        if not is_search_active(search_id):     # ← check before each API call
+            return None
+        time.sleep(0.1)    # 500 req/min limit — 0.15s gives safety buffer
         user_mins = get_tfl_journey_minutes(
             user_lat, user_lng,
             commute_stops["latitude"], commute_stops["longitude"],
@@ -123,7 +159,7 @@ def filter_stops_by_time(user_time_specific_stops, user_lat, user_lng, max_user_
         return None
 
     print(f"Querying TfL API for {len(user_time_specific_stops)} stops concurrently...")
-    with ThreadPoolExecutor(max_workers=4) as executor:
+    with ThreadPoolExecutor(max_workers=6) as executor:
         futures = {executor.submit(check_stops, stop): stop for stop in user_time_specific_stops}
         completed = 0
         for future in as_completed(futures):
@@ -182,7 +218,6 @@ print(f"Loaded {len(tfl_stations)} stops")
 def index():
     return render_template("index.html")
 
-
 @app.route("/run", methods=["POST"])
 def run():
     data        = request.json
@@ -190,26 +225,57 @@ def run():
     user_lng    = float(data["lng"])
     max_minutes = float(data["maxMinutes"])
     modes       = [m.strip().lower() for m in data["modes"].split(",") if m.strip()]
+    search_id   = data.get("searchId")
 
-    mode_filtered = filter_stops_by_mode(tfl_stations, mode=modes)
-    reachable     = filter_stops_by_time(mode_filtered, user_lat, user_lng, max_minutes)
-    isochrone     = get_ors_isochrone(user_lat, user_lng, max_minutes)
+    register_search(search_id)
+    try:
+        mode_filtered = filter_stops_by_mode(tfl_stations, mode=modes)
+        reachable     = filter_stops_by_time(mode_filtered, user_lat, user_lng, max_minutes,search_id)
 
-    return jsonify({
-        "origin":     {"lat": user_lat, "lng": user_lng},
-        "maxMinutes": max_minutes,
-        "isochrone":  isochrone,
-        "stops": [
-            {
-                "name":            s["name"],
-                "lat":             s["latitude"],
-                "lng":             s["longitude"],
-                "mode":            s["mode"],
-                "journey_minutes": s["journey_minutes"],
-            }
-            for s in reachable
-        ]
-    })
+        if not is_search_active(search_id):
+            return jsonify({"cancelled": True}), 200
+
+
+        isochrone = get_ors_isochrone(user_lat, user_lng, max_minutes)
+
+        return jsonify({
+            "origin":     {"lat": user_lat, "lng": user_lng},
+            "maxMinutes": max_minutes,
+            "isochrone":  isochrone,
+            "stops": [
+                {
+                    "name":            s["name"],
+                    "lat":             s["latitude"],
+                    "lng":             s["longitude"],
+                    "mode":            s["mode"],
+                    "journey_minutes": s["journey_minutes"],
+                }
+                for s in reachable
+            ]
+        })
+
+    finally: 
+        cleanup_search(search_id)
+
+# ── Add cancel endpoint ──────────────────────────────
+@app.route("/cancel", methods=["POST"])
+def cancel():
+    search_id = request.json.get("searchId")
+    cancel_search(search_id)
+    return jsonify({"cancelled": True})
+
+
+@app.route("/stops", methods=["GET"])
+def stops():
+    return jsonify([
+        {
+            "name": s["name"] or "Unknown", #unknow if the name field is empty from CSV
+            "lat":  s["latitude"],
+            "lng":  s["longitude"],
+            "mode": s["mode"],
+        }
+        for s in tfl_stations
+    ])
 
 
 # =============================================================================
