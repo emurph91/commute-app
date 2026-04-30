@@ -1,7 +1,8 @@
 const MODE_COLOURS = {
-    bus:  "#2266dd",
-    tube: "#cc2233",
-    rail: "#229944",
+    bus:   "#2266dd",
+    tube:  "#cc2233",
+    rail:  "#229944",
+    ferry: "#ff9900",
 };
 
 let map             = null;
@@ -10,7 +11,7 @@ let originMarker    = null;
 let abortController = null;
 let currentSearchId = null;
 
-const modeMarkers = { rail: [], tube: [], bus: [] };
+const modeMarkers = { rail: [], tube: [], bus: [], ferry: [] };
 
 window.addEventListener("DOMContentLoaded", () => {
     map = L.map("map", { zoomControl: false }).setView([51.505, -0.09], 11);
@@ -46,12 +47,24 @@ window.addEventListener("DOMContentLoaded", () => {
         }).addTo(map).bindPopup("<b>Your location</b>");
     });
 
+    // ── Time/distance toggle ──────────────────────────────────────────────────
+    document.querySelectorAll("input[name='filter-type']").forEach(radio => {
+        radio.addEventListener("change", (e) => {
+            document.getElementById("time-field").style.display     = e.target.value === "time"     ? "flex" : "none";
+            document.getElementById("distance-field").style.display = e.target.value === "distance" ? "flex" : "none";
+            document.getElementById("depart-field").style.display   = e.target.value === "time"     ? "flex" : "none";
+        });
+    });
+
     // ── Search button ─────────────────────────────────────────────────────────
     document.getElementById("search-btn").addEventListener("click", () => {
         const lat        = parseFloat(document.getElementById("lat").value);
         const lng        = parseFloat(document.getElementById("lng").value);
+        const filterType = document.querySelector("input[name='filter-type']:checked").value;
         const maxMinutes = parseFloat(document.getElementById("max-minutes").value);
-        const selected   = ["rail", "tube", "bus"].filter(
+        const maxKm      = parseFloat(document.getElementById("max-km").value);
+        const departTime = document.getElementById("depart-time").value;   // "09:00"
+        const selected   = ["rail", "tube", "bus", "ferry"].filter(
             m => document.getElementById(`mode-${m}`).checked
         );
 
@@ -60,8 +73,8 @@ window.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        document.getElementById("cancel-btn").disabled = false;
-        runSearch(lat, lng, maxMinutes, selected.join(","));
+        document.getElementById("cancel-btn").disabled = filterType !== "time";
+        runSearch(lat, lng, maxMinutes, maxKm, filterType, selected.join(","), departTime);
     });
 
     // ── Cancel button ─────────────────────────────────────────────────────────
@@ -85,7 +98,7 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     // ── Checkbox live filter ──────────────────────────────────────────────────
-    ["rail", "tube", "bus"].forEach(mode => {
+    ["rail", "tube", "bus", "ferry"].forEach(mode => {
         document.getElementById(`mode-${mode}`).addEventListener("change", (e) => {
             modeMarkers[mode].forEach(marker => {
                 e.target.checked ? marker.addTo(map) : map.removeLayer(marker);
@@ -105,9 +118,9 @@ async function loadAllStops() {
     }
 }
 
-// ── Clear all mode markers and polygon (keep origin marker) ───────────────────
+// ── Clear all mode markers and polygon ────────────────────────────────────────
 function clearMap() {
-    ["rail", "tube", "bus"].forEach(mode => {
+    ["rail", "tube", "bus", "ferry"].forEach(mode => {
         modeMarkers[mode].forEach(m => map.removeLayer(m));
         modeMarkers[mode] = [];
     });
@@ -120,21 +133,28 @@ function renderStops(stops, fromSearch) {
         const mode      = stop.mode;
         const colour    = MODE_COLOURS[mode] || "#888";
         const checked   = document.getElementById(`mode-${mode}`)?.checked ?? true;
-        const isNearest = fromSearch && index === 0;    // index 0 = lowest journey time
+        const isNearest = fromSearch && index === 0;
+
+        let detail = "";
+        if (fromSearch) {
+            detail = stop.journey_minutes !== undefined
+                ? `Journey: ${stop.journey_minutes} mins`
+                : `Distance: ${stop.distance_km} km`;
+        }
 
         const popup = fromSearch
-            ? `<b>${stop.name || "Unknown stop"}</b><br>${isNearest ? "⭐ Nearest<br>" : ""}Mode: ${stop.mode}<br>Journey: ${stop.journey_minutes} mins`
-            : `<b>${stop.name || "Unknown stop"}</b><br>Mode: ${stop.mode}`;
+            ? `<b>${stop.name || "Unknown"}</b><br>${isNearest ? "⭐ Nearest<br>" : ""}Mode: ${stop.mode}<br>${detail}`
+            : `<b>${stop.name || "Unknown"}</b><br>Mode: ${stop.mode}`;
 
         const marker = L.circleMarker([stop.lat, stop.lng], {
             radius:      isNearest ? 10 : 5,
-            color:       colour,                            // ← border always mode colour
-            fillColor:   isNearest ? "#ffcc00" : colour,   // ← yellow fill only for nearest
+            color:       colour,
+            fillColor:   isNearest ? "#ffcc00" : colour,
             fillOpacity: fromSearch ? 0.9 : 0.45,
             weight:      isNearest ? 3 : 1,
         }).bindPopup(popup);
 
-        if (checked || isNearest) marker.addTo(map);      // ← always add nearest regardless
+        if (checked || isNearest) marker.addTo(map);
         if (isNearest) marker.openPopup();
 
         if (modeMarkers[mode]) modeMarkers[mode].push(marker);
@@ -142,25 +162,29 @@ function renderStops(stops, fromSearch) {
 }
 
 // ── Render ORS isochrone ──────────────────────────────────────────────────────
-function renderIsochrone(geojson, maxMinutes) {
+function renderIsochrone(geojson, value) {
     if (!geojson?.features?.length) return;
     polygonLayer = L.geoJSON(geojson, {
         style: { color: "#00aa77", weight: 2, fillColor: "#00aa77", fillOpacity: 0.1 }
-    }).addTo(map).bindPopup(`Reachable area within ${maxMinutes} mins`);
+    }).addTo(map).bindPopup("Reachable area");
 }
 
 // ── Update legend count ───────────────────────────────────────────────────────
-function updateLegend(stops, maxMinutes) {
+function updateLegend(stops, data) {
     const el = document.getElementById("stop-count");
-    if (el) el.textContent = `${stops.length} stops within ${maxMinutes} mins`;
+    if (!el) return;
+    const label = data.filterType === "distance"
+        ? `${stops.length} stops within ${data.maxKm} km`
+        : `${stops.length} stops within ${data.maxMinutes} mins`;
+    el.textContent = label;
 }
 
 // ── Render full search results ────────────────────────────────────────────────
 function renderMap(data) {
     clearMap();
-    renderIsochrone(data.isochrone, data.maxMinutes);
+    renderIsochrone(data.isochrone, data.maxMinutes || data.maxKm);
     renderStops(data.stops, true);
-    updateLegend(data.stops, data.maxMinutes);
+    updateLegend(data.stops, data);
 
     if (data.stops.length > 0) {
         map.panTo([data.stops[0].lat, data.stops[0].lng], { animate: true, duration: 1 });
@@ -168,24 +192,34 @@ function renderMap(data) {
 }
 
 // ── Run search ────────────────────────────────────────────────────────────────
-async function runSearch(lat, lng, maxMinutes, modes) {
+async function runSearch(lat, lng, maxMinutes, maxKm, filterType, modes, departTime) {
     const statusEl  = document.getElementById("status");
     const btn       = document.getElementById("search-btn");
     const cancelBtn = document.getElementById("cancel-btn");
 
     currentSearchId      = crypto.randomUUID();
-    statusEl.textContent = "Querying TfL API…";
+    statusEl.textContent = filterType === "time" ? "Querying TfL API…" : "Calculating distances…";
     btn.disabled         = true;
-    cancelBtn.disabled   = false;
+    cancelBtn.disabled   = filterType !== "time";
     abortController      = new AbortController();
 
     try {
         const response = await fetch("/run", {
             method:  "POST",
             headers: { "Content-Type": "application/json" },
-            body:    JSON.stringify({ lat, lng, maxMinutes, modes, searchId: currentSearchId }),
-            signal:  abortController.signal,
+            body:    JSON.stringify({
+                lat,
+                lng,
+                maxMinutes,
+                maxKm,
+                filterType,
+                modes,
+                departTime,                 // ← departure time passed to Flask
+                searchId: currentSearchId,
+            }),
+            signal: abortController.signal,
         });
+
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
         const data = await response.json();
 

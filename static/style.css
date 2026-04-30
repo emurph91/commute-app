@@ -11,6 +11,7 @@
     --rail:     #44ff88;
     --tube:     #ff4455;
     --bus:      #4488ff;
+    --ferry:    #ff9900;
     --origin:   #ffffff;
     --accent:   #00ffaa;
 }
@@ -114,10 +115,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'DM Sans'
 .checkbox-custom.rail  { border-color: var(--rail); }
 .checkbox-custom.tube  { border-color: var(--tube); }
 .checkbox-custom.bus   { border-color: var(--bus); }
+.checkbox-custom.ferry { border-color: var(--ferry); }
 
 input[type="checkbox"]:checked + .checkbox-custom.rail  { background: var(--rail); }
 input[type="checkbox"]:checked + .checkbox-custom.tube  { background: var(--tube); }
 input[type="checkbox"]:checked + .checkbox-custom.bus   { background: var(--bus); }
+input[type="checkbox"]:checked + .checkbox-custom.ferry { background: var(--ferry); }
+
 
 /* ── Search button ── */
 #search-btn {
@@ -214,6 +218,7 @@ input[type="checkbox"]:checked + .checkbox-custom.bus   { background: var(--bus)
 .dot.rail   { background: var(--rail); }
 .dot.tube   { background: var(--tube); }
 .dot.bus    { background: var(--bus); }
+.dot.ferry { background: var(--ferry); }
 .dot.origin { background: var(--origin); }
 
 #stop-count {
@@ -223,6 +228,25 @@ input[type="checkbox"]:checked + .checkbox-custom.bus   { background: var(--bus)
     margin-top: 4px;
     border-top: 1px solid var(--border);
     padding-top: 7px;
+}
+
+.toggle-row {
+    display: flex;
+    gap: 16px;
+}
+
+.toggle-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.toggle-option input[type="radio"] {
+    accent-color: var(--accent);
+    cursor: pointer;
 }
 
 /* ── Leaflet popup overrides ── */
