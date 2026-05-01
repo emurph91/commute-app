@@ -133,7 +133,7 @@ def get_tfl_journey_minutes(origin_lat, origin_lng, dest_lat, dest_lng, mode, de
                 continue
 
             response.raise_for_status()
-            journeys = response.json().get("journeys", [])
+            journeys = response.json().get("journeys", []) #check with ethan about this ...why is this get white? indentation error?
             if journeys:
                 return journeys[0]["duration"]
 
@@ -173,9 +173,9 @@ def filter_stops_by_time(user_time_specific_stops, user_lat, user_lng, max_user_
     user_commute_time_results = []
 
     def check_stops(commute_stops):
-        if not is_search_active(search_id):     # ← check before each API call
+        if not is_search_active(search_id):     #check that the search hasn't been cancelled by user before each API call
             return None
-        time.sleep(0.1)    # 500 req/min limit — 0.15s gives safety buffer
+        time.sleep(0.1)    # 500 req/min limit — 0.1s gives safety buffer
         user_mins = get_tfl_journey_minutes(
             user_lat, user_lng,
             commute_stops["latitude"], commute_stops["longitude"],
@@ -216,7 +216,7 @@ def get_ors_isochrone(lat, lng, value, filter_type="time"):
     }
     body = {
         "locations":  [[lng, lat]],
-        "range":      [value * 60 if filter_type == "time" else value * 1000],  # seconds or metres
+        "range":      [value * 60 if filter_type == "time" else value * 1000],  # allows seconds for time filter or metres for distance filter
         "range_type": "time" if filter_type == "time" else "distance",
         "smoothing":  0.5,
     }
@@ -252,7 +252,7 @@ def run():
     max_minutes = float(data["maxMinutes"]) #max time entered by user to find max commuting area base on time
     modes       = [m.strip().lower() for m in data["modes"].split(",") if m.strip()] #user can filter based on mode of transport
     filter_type = data.get("filterType", "time") #user can filter based on time or distance
-    search_id   = data.get("searchId")
+    search_id   = data.get("searchId") #
 
     depart_time_str = data.get("departTime")    
     depart_time = None
@@ -353,9 +353,9 @@ def run():
     finally:
         cleanup_search(search_id)
 
-       # print(f"Walkable bus stops included: {len([s for s in walkable_bus_stops if s['journey_minutes'] <= max_minutes])}")
+        #print(f"Walkable bus stops included: {len([s for s in walkable_bus_stops if s['journey_minutes'] <= max_minutes])}")
         #print(f"API reachable stops: {len(api_reachable)}")
-       # print(f"Total reachable: {len(user_reachable)}")
+        #print(f"Total reachable: {len(user_reachable)}")
 
 # ── Add cancel endpoint ──────────────────────────────
 @app.route("/cancel", methods=["POST"])
