@@ -1,0 +1,18 @@
+mode types,comment,stop types codes,mode designation,stop code description
+tube,includes dlr,BCT,bus,Bus/Coach/Tram Stop On Street 
+national-rail,includes elizabeth line and overground services,TMU,tube,Tram/Metro/Underground Entrance 
+bus,includes coach services,MET,tube,Tram/Metro/Underground Access 
+tram,,PLT,tube,Tram/Metro/Underground Platform 
+ferry,,RSE,national-rail,Rail Station Entrance 
+,,RLY,national-rail,Interchange area or general access within a rail station 
+,,BCQ,bus,Bus/Coach/Tram Station Variable Bay 
+,,BCS,bus,Bus/Coach/Tram Station Bay 
+,,FBT,ferry,Ferry Berth 
+,,FER,ferry,ferry terminal
+,,FTD,ferry,
+,,GAT,airplane,airport gate
+,,MKD,bus,Marked Bus Stop 
+,,HAR,bus,Hail-and-Ride 
+,,GCH,bus,Coach station 
+,,RPL ,national-rail,rail platform
+,,GCE,bus,

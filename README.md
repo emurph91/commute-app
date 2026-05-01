@@ -1,0 +1,108 @@
+**This project is a Flask-based web application that helps users plan and explore commute routes using external transport data. This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.**
+
+It integrates with:
+
+Transport for London (TfL API) for live/public transport data
+
+OpenRouteService (ORS API) for route calculations and mapping
+
+-------------------------
+-------------------
+
+Backend:
+
+    Python
+    Flask (web framework)
+    Frontend
+
+HTML (templates):
+
+    CSS (styling)
+    JavaScript (client-side logic)
+
+APIs:
+
+    TfL API → transport data (stations, arrivals, etc.)
+    ORS API → route planning, directions, mapping
+
+Make sure you have:
+
+    Python 3.8+
+    Git
+
+----------------------------
+----------------------------
+
+**How the App Works:**
+
+1. User loads a page (Flask serves HTML from /templates)
+
+2. Frontend JavaScript captures user input (locations, routes)
+
+3. Flask backend:
+
+    a. Calls TfL API → retrieves transport data
+
+    b. Calls ORS API → calculates routes
+
+4. Data is returned and rendered in the UI
+
+-----------------------
+------------------------
+
+**How to Set up:**
+
+1. Clone the repository
+
+2. Create and activate a virtual environment (optional but highly recommended)
+
+3. Install Dependencies
+
+4. API key setup
+
+    a. TFL API: Sign up via the Transport for London portal. Generate an App ID and App Key
+
+    b. ORS API: Register with OpenRouteService. Get your API key
+
+5. Create a .env file in the root directory to contain your API keys.
+
+6. Download transport CSV from .gov website:  https://beta-naptan.dft.gov.uk/download/la
+    
+    a. Choose Greater London/London (490) as your local authority search.
+
+    b. Choose CSV file type as download.
+
+    c. Cnsure it is within your commute_app folder directory
+
+    d. This data set needs to be cleaned, a "mode" column is required with bus, rail, tube, and ferry categories aggregating the data. 
+    
+    e. See xlookup transport mode table.csv for help. 
+
+7. Run the Application through app.py
+
+8. In the terminal a http link will appear, click to open the web application.
+
+9. Input criteria of request and click search. NOTE: Searches can take up to 5mins due to numerous API calls. 
+--------------------------------
+--------------------------------
+**Project Structure**
+
+commute-app/
+
+│ app.py              
+
+│ templates/               # HTML templates
+
+│ static/
+
+    │   ├ css/             # Stylesheets
+    │   └ js/              # JavaScript
+
+│ requirements.txt         # Dependencies
+
+│ .env                     # API keys (not committed)
+
+| 490Stops.csv
+
+----------------------------
+-----------------------

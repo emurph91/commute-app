@@ -2,7 +2,7 @@
 venv/
 
 # API keys
-ORS_API_KEY
+TFL_API_KEY.txt
 OPS_API_KEY
 
 # Python cache
@@ -21,3 +21,6 @@ naptan database_GB_2026.csv
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python Notebooks
+testing_app_functions.ipynb
