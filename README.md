@@ -52,19 +52,19 @@ Make sure you have:
 
 **How to Set up:**
 
-1. Clone the repository
+1. Clone the repository `git clone https://github.com/emurph91/commute-app.git`
 
-2. Create and activate a virtual environment (optional but highly recommended)
+2. Create and activate a virtual environment in folder directory (optional but highly recommended). `py -m venv`
 
-3. Install Dependencies
+3. Install dependencies using requirements.txt. `pip install -r requirements.txt`
 
 4. API key setup
 
-    a. TFL API: Sign up via the Transport for London portal. Generate an App ID and App Key
+    a. TFL API: Sign up via the Transport for London portal (https://api.tfl.gov.uk/). Generate an App ID and App Key
 
-    b. ORS API: Register with OpenRouteService. Get your API key
+    b. ORS API (https://api.openrouteservice.org/): Register with OpenRouteService. Get your API key
 
-5. Create a .env file in the root directory to contain your API keys.
+5. Save API keys in your directory folder. Update the code in app.py to reflect your exact naming of the API key files.
 
 6. Download transport CSV from .gov website:  https://beta-naptan.dft.gov.uk/download/la
     
@@ -76,13 +76,13 @@ Make sure you have:
 
     d. This data set needs to be cleaned, a "mode" column is required with bus, rail, tube, and ferry categories aggregating the data. 
     
-    e. See xlookup transport mode table.csv for help. 
+    e. See mode_table.csv for help. 
 
 7. Run the Application through app.py
 
-8. In the terminal a http link will appear, click to open the web application.
+8. In the terminal a http link (http://127.0.0.1:5000) will appear, click to open the web application.
 
-9. Input criteria of request and click search. NOTE: Searches can take up to 5mins due to numerous API calls. 
+9. Input commute criteria and click search. NOTE: Searches can take up to 5mins due to numerous API calls. 
 --------------------------------
 --------------------------------
 **Project Structure**
