@@ -72,17 +72,19 @@ Make sure you have:
 
     b. Choose CSV file type as download.
 
-    c. Cnsure it is within your commute_app folder directory
+    c. Ensure it is within your commute_app folder directory
 
     d. This data set needs to be cleaned, a "mode" column is required with bus, rail, tube, and ferry categories aggregating the data. 
     
     e. See mode_table.csv for help. 
 
-7. Run the Application through app.py
+7. Run the Application `py app.py`
 
 8. In the terminal a http link (http://127.0.0.1:5000) will appear, click to open the web application.
 
 9. Input commute criteria and click search. NOTE: Searches can take up to 5mins due to numerous API calls. 
+
+10. To stop the app: press Ctrl + c, inside the terminal.
 --------------------------------
 --------------------------------
 **Project Structure**
