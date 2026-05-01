@@ -133,7 +133,7 @@ def get_tfl_journey_minutes(origin_lat, origin_lng, dest_lat, dest_lng, mode, de
                 continue
 
             response.raise_for_status()
-            journeys = response.json().get("journeys", []) #check with ethan about this ...why is this get white? indentation error?
+            journeys = response.json().get("journeys", []) 
             if journeys:
                 return journeys[0]["duration"]
 
@@ -204,8 +204,8 @@ def filter_stops_by_time(user_time_specific_stops, user_lat, user_lng, max_user_
 
 # =============================================================================
 # ORS ISOCHRONE
-# Note: ORS does not support public transit — driving-car is used as a visual
-# approximation of the reachable area. Accurate journey times come from TfL API.
+# Note: ORS does not support public transit — driving-car is used as a visual approximation of the reachable area. 
+# Accurate journey times come from TfL API.
 # =============================================================================
 
 def get_ors_isochrone(lat, lng, value, filter_type="time"):
@@ -249,10 +249,10 @@ def run():
     data        = request.json
     user_lat    = float(data["lat"])
     user_lng    = float(data["lng"])
-    max_minutes = float(data["maxMinutes"]) #max time entered by user to find max commuting area base on time
-    modes       = [m.strip().lower() for m in data["modes"].split(",") if m.strip()] #user can filter based on mode of transport
-    filter_type = data.get("filterType", "time") #user can filter based on time or distance
-    search_id   = data.get("searchId") #
+    max_minutes = float(data["maxMinutes"])                                             #max time entered by user to find max commuting area base on time
+    modes       = [m.strip().lower() for m in data["modes"].split(",") if m.strip()]    #user can filter based on mode of transport
+    filter_type = data.get("filterType", "time")                                        #user can filter based on time or distance
+    search_id   = data.get("searchId") 
 
     depart_time_str = data.get("departTime")    
     depart_time = None
@@ -268,7 +268,7 @@ def run():
         if filter_type == "distance":
             max_km    = float(data["maxKm"])
             reachable = filter_stops_by_distance(mode_filtered, user_lat, user_lng, max_km)
-            isochrone = get_ors_isochrone(user_lat, user_lng, max_km)   # use km for ORS too
+            isochrone = get_ors_isochrone(user_lat, user_lng, max_km)               # use km for ORS too
 
             return jsonify({
                 "origin":     {"lat": user_lat, "lng": user_lng},
@@ -297,7 +297,7 @@ def run():
 # split bus stops into walkable and non-walkable
             walkable_bus_stops    = []
             non_walkable_bus_stops = []
-            WALK_SPEED_KMH = 5 #average persons walk speed in km/hr
+            WALK_SPEED_KMH = 5                              # average person walk speed in km/hr
             WALK_THRESHOLD_KM = (10 / 60) * WALK_SPEED_KMH  # 10 min walk ≈ 0.83km
 
             for sampled_stop in bus_stops:
@@ -318,7 +318,7 @@ def run():
                 print(f"Sampling {BUS_SAMPLE_SIZE} from {len(non_walkable_bus_stops)} bus stops")
                 non_walkable_bus_stops = random.sample(non_walkable_bus_stops, BUS_SAMPLE_SIZE)
 
-            all_modes_non_walkable_stops = non_bus_stops + non_walkable_bus_stops #dataset of all rail, tube and non-walkable bus stops
+            all_modes_non_walkable_stops = non_bus_stops + non_walkable_bus_stops        #dataset of all rail, tube and non-walkable bus stops
             api_reachable   = filter_stops_by_time(all_modes_non_walkable_stops, user_lat, user_lng, max_minutes, search_id, depart_time=depart_time)
 
 # combine API results with walkable stops (already have journey_minutes)
@@ -353,10 +353,6 @@ def run():
     finally:
         cleanup_search(search_id)
 
-        #print(f"Walkable bus stops included: {len([s for s in walkable_bus_stops if s['journey_minutes'] <= max_minutes])}")
-        #print(f"API reachable stops: {len(api_reachable)}")
-        #print(f"Total reachable: {len(user_reachable)}")
-
 # ── Add cancel endpoint ──────────────────────────────
 @app.route("/cancel", methods=["POST"])
 def cancel():
@@ -369,7 +365,7 @@ def cancel():
 def stops():
     return jsonify([
         {
-            "name": s["name"] or "Unknown", #unknown if the name field is empty from CSV
+            "name": s["name"] or "Unknown", #state "unknown" if the name field is empty from CSV
             "lat":  s["latitude"],
             "lng":  s["longitude"],
             "mode": s["mode"],
